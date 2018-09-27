@@ -1,0 +1,4 @@
+<launch>
+    <node name="skeleton_tf_listener" pkg="raw_skeleton" type="skeleton_tf_listener" args="--test" respawn="true" />
+    <node name="feature_extraction" pkg="raw_skeleton" type="feature_extraction.py" args="--test" respawn="true" />
+</launch>
