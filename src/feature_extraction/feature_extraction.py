@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String
-from scipy.spatial import distance
 
 import math
 from math import pi
@@ -10,7 +9,6 @@ import csv
 import os
 
 import numpy as np
-from scipy.cluster.vq import vq,kmeans2,whiten
 import matplotlib.pyplot as plt
 #!!!whiten function to normalize whole feature individually
 
@@ -106,7 +104,7 @@ def initialise():
 def run():
     rate=rospy.Rate(obsFreq)
     rospy.Subscriber('openni2_camera_node/bodyJointArr',String,callback) #subscriber defined
-    
+
     waist_angle_publisher=rospy.Publisher('body_publisher/waist', String, queue_size=10) #Publishers to publish spesific angle data
     rightshoulder_angle_publisher=rospy.Publisher('body_publisher/rightshoulder', String, queue_size=10)
     rightelbow_angle_publisher=rospy.Publisher('body_publisher/rightelbow', String, queue_size=10)
@@ -320,19 +318,19 @@ def decide_feature_vectors():
     except ZeroDivisionError:
         pass
     ###################################################################################################### lhand_distance calculations
-    lhand_distance=math.sqrt((leftHip[0]-leftHand[0])*(leftHip[0]-leftHand[0])+(leftHip[1]-leftHand[1])*(leftHip[1]-leftHand[1]))#+(rightHand[2]-leftHand[2])*(rightHand[2]-leftHand[2]))     
+    lhand_distance=math.sqrt((leftHip[0]-leftHand[0])*(leftHip[0]-leftHand[0])+(leftHip[1]-leftHand[1])*(leftHip[1]-leftHand[1]))#+(rightHand[2]-leftHand[2])*(rightHand[2]-leftHand[2]))
     ###################################################################################################### profile_angle calculations
     pa_vector1[0]=rightShoulder[0]-leftShoulder[0]
     pa_vector1[1]=rightShoulder[1]-leftShoulder[1]
     pa_vector1[2]=rightShoulder[2]-leftShoulder[2]
-    
+
     pa_vector2[0]=torso[0]
     pa_vector2[1]=torso[1]
     pa_vector2[2]=torso[2]
-    
+
     norm_pa_vector1=math.sqrt((pa_vector1[0]*pa_vector1[0])+(pa_vector1[1]*pa_vector1[1])+(pa_vector1[2]*pa_vector1[2]))
     norm_pa_vector2=math.sqrt((pa_vector2[0]*pa_vector2[0])+(pa_vector2[1]*pa_vector2[1])+(pa_vector2[2]*pa_vector2[2]))
-    
+
     profile_dot_product=(pa_vector1[0]*pa_vector2[0])+(pa_vector1[1]*pa_vector2[1])+(pa_vector1[2]*pa_vector2[2])
     try:
         profile_angle =(math.acos(float(profile_dot_product) /(float(norm_pa_vector2)*float(norm_pa_vector1))) * 180/pi)
@@ -342,7 +340,7 @@ def decide_feature_vectors():
     rhandrelativecoordinate[0]=torso[0]-rightHand[0]
     rhandrelativecoordinate[1]=torso[1]-rightHand[1]
     rhandrelativecoordinate[2]=torso[2]-rightHand[2]
-    
+
 ##############################################################################################
 
 import Queue
