@@ -1,8 +1,10 @@
-#include <ros/ros.h>
-#include <tf/transform_listener.h>
-#include <geometry_msgs/Vector3.h>
-#include <std_msgs/String.h>
-#include <sstream>
+#include "ros/ros.h"
+#include "tf/transform_listener.h"
+#include "geometry_msgs/Vector3.h"
+#include "std_msgs/String.h"
+#include "raw_skeleton/update_user.h"
+#include "sstream"
+#include "string"
 
 #define ACTIVATE_MACROS 0
 #if ACTIVATE_MACROS
@@ -22,18 +24,24 @@
     #define RIGHT_FOOT transform[13]
     #define LEFT_FOOT transform[14]
 #endif
-//Prototypes
+// Function Prototypes
 void updateBodyJoints(geometry_msgs::Vector3 bodyJoints[15],tf::StampedTransform transform[15]);
+bool update_user_id(raw_skeleton::update_user::Request &req, 
+                    raw_skeleton::update_user::Response &res);
 
 //Global variables
 std::stringstream buffer;
-std_msgs::String bodyJointArr;;
+std_msgs::String bodyJointArr;
+std::string base_frame="/tracker_depth_frame";
+std::string human_base_frame="/tracker/user_1";
+bool transformation_flag=false;
+float transformation_duration=0.2;
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "skeleton_tf_listener");
-
   ros::NodeHandle node;
-
+  
+  ros::ServiceServer s = node.advertiseService("/raw_skeleton/update_user_id",&update_user_id);
   ros::Publisher bodyJointAray_pub = node.advertise<std_msgs::String>("openni2_camera_node/bodyJointArr", 10);
 
   tf::TransformListener listener;
@@ -41,48 +49,50 @@ int main(int argc, char** argv){
   tf::StampedTransform transform[15];
   ros::Rate rate(10.0);
   while (node.ok()){
-    try{
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/head",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/head",ros::Time(0), transform[0]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/neck",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/neck",ros::Time(0), transform[1]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/right_shoulder",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/right_shoulder",ros::Time(0), transform[2]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/left_shoulder",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/left_shoulder",ros::Time(0), transform[3]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/right_elbow",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/right_elbow",ros::Time(0), transform[4]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/left_elbow",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/left_elbow",ros::Time(0), transform[5]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/right_hand",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/right_hand",ros::Time(0), transform[6]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/left_hand",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/left_hand",ros::Time(0), transform[7]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/torso",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/torso",ros::Time(0), transform[8]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/right_hip",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/right_hip",ros::Time(0), transform[9]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/left_hip",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/left_hip",ros::Time(0), transform[10]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/right_knee",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/right_knee",ros::Time(0), transform[11]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/left_knee",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/left_knee",ros::Time(0), transform[12]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/right_foot",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/right_foot",ros::Time(0), transform[13]);
-      listener.waitForTransform("/tracker_depth_frame","/tracker/user_1/left_foot",ros::Time(0),ros::Duration(2.0));
-      listener.lookupTransform("/tracker_depth_frame","/tracker/user_1/left_foot",ros::Time(0), transform[14]);
+    if(transformation_flag==true){
+        try{
+          listener.waitForTransform( base_frame, human_base_frame + "/head",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/head",ros::Time(0), transform[0]);
+          listener.waitForTransform( base_frame, human_base_frame + "/neck",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/neck",ros::Time(0), transform[1]);
+          listener.waitForTransform( base_frame, human_base_frame + "/right_shoulder",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/right_shoulder",ros::Time(0), transform[2]);
+          listener.waitForTransform( base_frame, human_base_frame + "/left_shoulder",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/left_shoulder",ros::Time(0), transform[3]);
+          listener.waitForTransform( base_frame, human_base_frame + "/right_elbow",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/right_elbow",ros::Time(0), transform[4]);
+          listener.waitForTransform( base_frame, human_base_frame + "/left_elbow",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/left_elbow",ros::Time(0), transform[5]);
+          listener.waitForTransform( base_frame, human_base_frame + "/right_hand",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/right_hand",ros::Time(0), transform[6]);
+          listener.waitForTransform( base_frame, human_base_frame + "/left_hand",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/left_hand",ros::Time(0), transform[7]);
+          listener.waitForTransform( base_frame, human_base_frame + "/torso",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/torso",ros::Time(0), transform[8]);
+          listener.waitForTransform( base_frame, human_base_frame + "/right_hip",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/right_hip",ros::Time(0), transform[9]);
+          listener.waitForTransform( base_frame, human_base_frame + "/left_hip",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/left_hip",ros::Time(0), transform[10]);
+          listener.waitForTransform( base_frame, human_base_frame + "/right_knee",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/right_knee",ros::Time(0), transform[11]);
+          listener.waitForTransform( base_frame, human_base_frame + "/left_knee",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/left_knee",ros::Time(0), transform[12]);
+          listener.waitForTransform( base_frame, human_base_frame + "/right_foot",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/right_foot",ros::Time(0), transform[13]);
+          listener.waitForTransform( base_frame, human_base_frame + "/left_foot",ros::Time(0),ros::Duration(transformation_duration));
+          listener.lookupTransform(  base_frame, human_base_frame + "/left_foot",ros::Time(0), transform[14]);
+          
+          updateBodyJoints(bodyJoints,transform);
+          bodyJointAray_pub.publish(bodyJointArr);
+        }
+        catch (tf::TransformException &ex) {
+          ROS_ERROR("%s",ex.what());
+          transformation_flag=false;
+          continue;
+        }
     }
-    catch (tf::TransformException &ex) {
-      ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
-      continue;
-    }
-
-    updateBodyJoints(bodyJoints,transform);
-    bodyJointAray_pub.publish(bodyJointArr);
-
-    rate.sleep();
+    ros::spinOnce();
+    ros::Duration(0.05).sleep();
   }
   return 0;
 };
@@ -96,4 +106,21 @@ void updateBodyJoints(geometry_msgs::Vector3 bodyJoints[15],tf::StampedTransform
         buffer<<","<<bodyJoints[i].x<<","<<bodyJoints[i].y<<","<<bodyJoints[i].z;
     }
     bodyJointArr.data=buffer.str();
+}
+
+bool update_user_id(raw_skeleton::update_user::Request &req,
+                    raw_skeleton::update_user::Response &res)
+{  
+  try{
+    human_base_frame="/tracker/user_" + req.user_id;
+    ROS_INFO_STREAM("Target being tracked: " << human_base_frame);
+    transformation_flag=req.track_user;
+  }
+  catch(ros::Exception &ex){
+    ROS_ERROR("%s",ex.what());
+    res.success=false;
+    return false;
+  }
+  res.success=true;
+  return true;
 }

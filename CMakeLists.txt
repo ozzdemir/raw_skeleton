@@ -55,11 +55,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+ add_service_files(
+   FILES
+   update_user.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -69,10 +68,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   geometry_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -152,6 +151,7 @@ include_directories(
 # )
 
 add_executable(skeleton_tf_listener src/skeleton_tf_listener/skeleton_tf_listener.cpp)
+add_dependencies(skeleton_tf_listener ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(skeleton_tf_listener ${catkin_LIBRARIES})
 
 
